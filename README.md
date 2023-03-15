@@ -25,7 +25,7 @@ public class Example
 
 ```console
 ~/source-dir/
-> taskify https://edu.mmcs.sfedu.ru/mod/assign/view.php?id=20397 .\Task5.cs
+> taskify https://edu.mmcs.sfedu.ru/mod/assign/view.php?id=20397 .\Example.cs
 ```
 
 Example.cs: 
