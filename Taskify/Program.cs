@@ -1,28 +1,67 @@
 ﻿using System.Text;
-using System.Text.RegularExpressions;
+
+using Taskify;
 
 if (args.Length != 2)
 {
-    Console.ForegroundColor = ConsoleColor.Red;
-    Console.WriteLine("ERROR: Please provide an uri and a file path!");
-    Console.ForegroundColor = ConsoleColor.Green;
-    Console.WriteLine("Example: 'taskify https://www.youtube.com ./Program.cs'");
-    Console.ResetColor();
+    Logger.Error("Please provide an uri and a file path!");
+    Logger.Hint("Example: 'taskify https://www.youtube.com ./Program.cs'");
     return -1;
 }
 
 string uri = args[0];
-string filepath = args[1];
+string? filepath = args[1];
 
-HttpClient client = new();
-Regex textPattern = new(@"<ol>[\s\S]*?<\/ol>");
-Regex htmlTag = new(@"<.*?>");
-Regex taskNames = new(@"\[.+?\]");
-Regex weirdSymbols = new(@"&.+?;");
-Regex[] filters = { htmlTag, taskNames, weirdSymbols };
+const string loginDetailsFilepath = "taskify-user-data.txt";
+string[] loginDetails;
+try
+{
+    loginDetails = File.ReadAllText(loginDetailsFilepath).Split('\n');
+}
+catch (FileNotFoundException)
+{
+    Logger.Error($"No file '{loginDetailsFilepath}' found!");
+    Logger.Hint($"Please create '{loginDetailsFilepath}' in the same directory as the executable.");
+    Logger.Hint("It should contain your username and password in the following format:");
+    Logger.Hint("username");
+    Logger.Hint("password");
+    Logger.Hint("With no trailing spaces, etc., only a line break between them.");
+    return -1;
+}
 
-Console.WriteLine($"Getting text from '{uri}'...");
-string text = await GetTaskDescriptionsAsync(uri, line =>
+string username = loginDetails[0];
+string password = loginDetails[1];
+MoodlePageScraper pageScraper = new(username, password);
+TaskExtractor extractor = new(pageScraper);
+
+Logger.Status("Logging in into moodle...");
+try
+{
+    await pageScraper.Login();
+}
+catch (Exception e)
+{
+    Logger.Error(e.Message);
+    return -1;
+}
+
+Logger.Status("Extracting tasks...");
+string text = await extractor.GetTaskDescriptionsAsync(uri, DecorateLine);
+
+if (filepath == null)
+    throw new InvalidOperationException("The filepath is null!");
+
+Logger.Status($"Writing result to '{filepath}'...");
+await using (StreamWriter writer = File.AppendText(filepath))
+{
+    writer.WriteLine();
+    writer.Write(text);
+}
+
+Logger.Hint("Successfully finished!");
+return 0;
+
+string DecorateLine(string line)
 {
     StringBuilder csLineBuilder = new();
     csLineBuilder.AppendLine("// == TASK 1 ==");
@@ -30,40 +69,4 @@ string text = await GetTaskDescriptionsAsync(uri, line =>
     csLineBuilder.AppendLine(line);
     
     return csLineBuilder.ToString();
-});
-
-Console.WriteLine($"Writing result to '{filepath}'...");
-await using (StreamWriter writer = File.AppendText(filepath))
-{
-    writer.WriteLine();
-    writer.Write(text);
-}
-
-Console.ForegroundColor = ConsoleColor.Green;
-Console.WriteLine("Successfully finished!");
-return 0;
-
-async Task<string> GetTaskDescriptionsAsync(string uri, Func<string, string> decorateLine)
-{
-    StringBuilder resultBuilder = new();
-
-    HttpResponseMessage response = await client.GetAsync(uri);
-    response.EnsureSuccessStatusCode();
-    string text = await response.Content.ReadAsStringAsync();
-
-    foreach (Match match in textPattern.Matches(text))
-    {
-        string section = match.Value;
-        foreach (var filter in filters)
-            section = filter.Replace(section, "");
-        
-        string[] descriptions = section.Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-        foreach (var description in descriptions)
-        {
-            string resultLine = decorateLine(description.Trim());
-            resultBuilder.AppendLine(resultLine);
-        }
-    }
-
-    return resultBuilder.ToString();
 }
