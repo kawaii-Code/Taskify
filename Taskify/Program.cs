@@ -1,55 +1,26 @@
-﻿using System.Text;
+﻿using Taskify;
+using Taskify.Services.Arguments;
+using Taskify.Services.LoginDetails;
+using Taskify.Services.TaskDescriptionBuilder;
+using Taskify.Services.TaskPageSource;
 
-using Taskify;
+IArguments arguments = 
+    args.Length > 1
+        ? ConsoleArguments.Parse(args)
+        : new InputtedArguments();
+ILoginDetailsService loginDetails = 
+    FileLoginDetails.AreAvailable()
+        ? new FileLoginDetails()
+        : new InputtedLoginDetails();
+ITaskPageSource pageSource = await GetMoodlePageScraper(loginDetails);
+ITaskDescriptionDecorator decorator = new CSharpLineDecorator();
+TaskExtractor extractor = new(pageSource, decorator);
 
-if (args.Length != 2)
-{
-    Logger.Error("Please provide an uri and a file path!");
-    Logger.Hint("Example: 'taskify https://www.youtube.com ./Program.cs'");
-    return -1;
-}
-
-string uri = args[0];
-string? filepath = args[1];
-
-const string loginDetailsFilepath = "taskify-user-data.txt";
-string[] loginDetails;
-try
-{
-    loginDetails = File.ReadAllText(loginDetailsFilepath).Split('\n');
-}
-catch (FileNotFoundException)
-{
-    Logger.Error($"No file '{loginDetailsFilepath}' found!");
-    Logger.Hint($"Please create '{loginDetailsFilepath}' in the same directory as the executable.");
-    Logger.Hint("It should contain your username and password in the following format:");
-    Logger.Hint("username");
-    Logger.Hint("password");
-    Logger.Hint("With no trailing spaces, etc., only a line break between them.");
-    return -1;
-}
-
-string username = loginDetails[0];
-string password = loginDetails[1];
-MoodlePageScraper pageScraper = new(username, password);
-TaskExtractor extractor = new(pageScraper);
-
-Logger.Status("Logging in into moodle...");
-try
-{
-    await pageScraper.Login();
-}
-catch (Exception e)
-{
-    Logger.Error(e.Message);
-    return -1;
-}
+string uri = arguments.Uri;
+string filepath = arguments.Filepath;
 
 Logger.Status("Extracting tasks...");
-string text = await extractor.GetTaskDescriptionsAsync(uri, DecorateLine);
-
-if (filepath == null)
-    throw new InvalidOperationException("The filepath is null!");
+string text = await extractor.GetTaskDescriptionsAsync(uri);
 
 Logger.Status($"Writing result to '{filepath}'...");
 await using (StreamWriter writer = File.AppendText(filepath))
@@ -58,15 +29,22 @@ await using (StreamWriter writer = File.AppendText(filepath))
     writer.Write(text);
 }
 
-Logger.Hint("Successfully finished!");
+Logger.Status("Successfully finished!");
 return 0;
 
-string DecorateLine(string line)
+async Task<MoodlePageScraper> GetMoodlePageScraper(ILoginDetailsService loginDetailsService)
 {
-    StringBuilder csLineBuilder = new();
-    csLineBuilder.AppendLine("// == TASK 1 ==");
-    csLineBuilder.Append("// ");
-    csLineBuilder.AppendLine(line);
-    
-    return csLineBuilder.ToString();
+    MoodlePageScraper pageScraper = new(loginDetailsService);
+    Logger.Status("Logging in into moodle...");
+    try
+    {
+        await pageScraper.Login();
+    }
+    catch (Exception e)
+    {
+        Logger.Error(e.Message);
+        throw;
+    }
+
+    return pageScraper;
 }

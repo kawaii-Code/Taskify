@@ -1,19 +1,22 @@
 ﻿using System.Text.RegularExpressions;
+using Taskify.Services.LoginDetails;
 
-namespace Taskify;
+namespace Taskify.Services.TaskPageSource;
 
-public partial class MoodlePageScraper : IMoodlePageSource
+public partial class MoodlePageScraper : ITaskPageSource
 {
+    private const string LoginPage = @"https://edu.mmcs.sfedu.ru/login/index.php";
+    
     private readonly string _username;
     private readonly string _password;
     private readonly HttpClient _client;
     
     private bool _isLoggedIn;
 
-    public MoodlePageScraper(string username, string password)
+    public MoodlePageScraper(ILoginDetailsService loginDetails)
     {
-        _username = username;
-        _password = password;
+        _username = loginDetails.Username;
+        _password = loginDetails.Password;
         _client = new HttpClient();
     }
 
@@ -22,17 +25,13 @@ public partial class MoodlePageScraper : IMoodlePageSource
         _client.Dispose();
     }
 
-    private const string LoginPage = @"https://edu.mmcs.sfedu.ru/login/index.php";
-
     public async Task<string> GetPage(string uri)
     {
         if (!_isLoggedIn)
             throw new InvalidOperationException("You must be logged in before you scrape any pages!");
         
         HttpResponseMessage response = await _client.GetAsync(uri);
-        string tasks = await response.Content.ReadAsStringAsync();
-        
-        return tasks;
+        return await response.Content.ReadAsStringAsync();
     }
     
     public async Task Login()
@@ -60,12 +59,14 @@ public partial class MoodlePageScraper : IMoodlePageSource
     private async Task<string> GetLoginToken()
     {
         HttpResponseMessage login = await _client.GetAsync(LoginPage);
-        string content = await login.Content.ReadAsStringAsync();
+        string loginPageContent = await login.Content.ReadAsStringAsync();
         
         Regex loginTokenPattern = GetLoginTokenRegex();
-        string loginToken = loginTokenPattern.Match(content).Groups["token"].Value;
-        
-        return loginToken;
+
+        return MatchLoginToken(loginTokenPattern);
+
+        string MatchLoginToken(Regex pattern) =>
+            pattern.Match(loginPageContent).Groups["token"].Value;
     }
 
     [GeneratedRegex("logintoken.*?value=\"(?<token>\\S+?)\"")]

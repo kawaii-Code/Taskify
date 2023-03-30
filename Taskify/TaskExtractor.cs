@@ -1,17 +1,21 @@
 ﻿using System.Text;
 using System.Text.RegularExpressions;
+using Taskify.Services.TaskDescriptionBuilder;
+using Taskify.Services.TaskPageSource;
 
 namespace Taskify;
 
 public partial class TaskExtractor
 {
-    private readonly IMoodlePageSource _source;
+    private readonly ITaskPageSource _source;
+    private readonly ITaskDescriptionDecorator _taskDescriptionDecorator;
     private readonly Regex _taskPattern;
     private readonly Regex[] _filters;
     
-    public TaskExtractor(IMoodlePageSource source)
+    public TaskExtractor(ITaskPageSource source, ITaskDescriptionDecorator taskDescriptionDecorator)
     {
         _source = source;
+        _taskDescriptionDecorator = taskDescriptionDecorator;
         _taskPattern = GetDefaultTaskPattern();
         
         Regex htmlTag = new(@"<.*?>");
@@ -21,14 +25,12 @@ public partial class TaskExtractor
     }
     
     [GeneratedRegex(@"<ol.*?>[\s\S]*?</ol>")]
-    public static partial Regex GetDefaultTaskPattern();
+    private static partial Regex GetDefaultTaskPattern();
 
-    public async Task<string> GetTaskDescriptionsAsync(string uri, Func<string, string> decorateLine)
-    {
-        return await GetTaskDescriptionsAsync(uri, _taskPattern, decorateLine);
-    }
-    
-    public async Task<string> GetTaskDescriptionsAsync(string uri, Regex taskPattern, Func<string, string> decorateLine)
+    public async Task<string> GetTaskDescriptionsAsync(string uri) =>
+        await GetTaskDescriptionsAsync(uri, _taskPattern);
+
+    public async Task<string> GetTaskDescriptionsAsync(string uri, Regex taskPattern)
     {
         StringBuilder resultBuilder = new();
         string page = await _source.GetPage(uri);
@@ -42,7 +44,7 @@ public partial class TaskExtractor
             string[] descriptions = section.Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
             foreach (string description in descriptions)
             {
-                string resultLine = decorateLine(description.Trim());
+                string resultLine = _taskDescriptionDecorator.DecorateLine(description.Trim());
                 resultBuilder.AppendLine(resultLine);
             }
         }
