@@ -1,24 +1,18 @@
 ﻿namespace Taskify.Services.LoginDetails;
 
-public class InputtedLoginDetails : ILoginDetailsService
+public class InputtedLoginDetails : ILoginDetails
 {
-    public string Username
+    public string GetUsername()
     {
-        get
-        {
-            Console.WriteLine("Moodle username: ");
-            string username = Console.ReadLine();
-            return username;
-        }
+        Console.Write("Moodle username: ");
+        string username = Console.ReadLine();
+        return username;
     }
     
-    public string Password 
+    public string GetPassword()
     {
-        get
-        {
-            Console.WriteLine("Moodle password: ");
-            string password = Console.ReadLine();
-            return password;
-        } 
+        Console.Write("Moodle password: ");
+        string password = Console.ReadLine();
+        return password;
     }
 }

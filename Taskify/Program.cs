@@ -6,45 +6,75 @@ using Taskify.Services.TaskPageSource;
 
 IArguments arguments = 
     args.Length > 1
-        ? ConsoleArguments.Parse(args)
+        ? new ConsoleArguments(args)
         : new InputtedArguments();
-ILoginDetailsService loginDetails = 
+ILoginDetails loginDetails = 
     FileLoginDetails.AreAvailable()
         ? new FileLoginDetails()
         : new InputtedLoginDetails();
-ITaskPageSource pageSource = await GetMoodlePageScraper(loginDetails);
+ITaskPageScraper pageScraper;
+try
+{
+    pageScraper = await InitializeMoodlePageScraper();
+}
+catch (HttpRequestException httpRequestException)
+{
+    Logger.Error(httpRequestException.Message);
+    Logger.Error("It seems that Moodle is down right now.");
+    return -1;
+}
+catch (Exception exception)
+{
+    Logger.Error(exception.Message);
+    return -1;
+}
 ITaskDescriptionDecorator decorator = new CSharpLineDecorator();
-TaskExtractor extractor = new(pageSource, decorator);
 
-string uri = arguments.Uri;
-string filepath = arguments.Filepath;
+string uri = arguments.GetUri();
+bool isPreview = arguments.IsPreview();
 
 Logger.Status("Extracting tasks...");
-string text = await extractor.GetTaskDescriptionsAsync(uri);
+TaskExtractor extractor = new(pageScraper, decorator);
+string tasks = await extractor.GetTaskDescriptionsAsync(uri);
 
-Logger.Status($"Writing result to '{filepath}'...");
-await using (StreamWriter writer = File.AppendText(filepath))
+if (isPreview)
 {
-    writer.WriteLine();
-    writer.Write(text);
+    PrintPreview(tasks);
+}
+else
+{
+    string? filepath = arguments.GetFilepath();
+    if (filepath == null)
+    {
+        Logger.Error("No filepath provided!");
+        return -1;
+    }
+    WriteResultToFile(filepath, tasks);
 }
 
 Logger.Status("Successfully finished!");
 return 0;
 
-async Task<MoodlePageScraper> GetMoodlePageScraper(ILoginDetailsService loginDetailsService)
+async Task<MoodlePageScraper> InitializeMoodlePageScraper()
 {
-    MoodlePageScraper pageScraper = new(loginDetailsService);
+    MoodlePageScraper scraper = new(loginDetails);
     Logger.Status("Logging in into moodle...");
-    try
-    {
-        await pageScraper.Login();
-    }
-    catch (Exception e)
-    {
-        Logger.Error(e.Message);
-        throw;
-    }
+    await scraper.Login();
+    return scraper;
+}
 
-    return pageScraper;
+void PrintPreview(string text)
+{
+    Logger.Hint("== START PREVIEW ==");
+    Logger.Status(text);
+    Logger.Hint("==  END PREVIEW  ==");
+}
+
+void WriteResultToFile(string filepath, string text)
+{
+    Logger.Status($"Writing result to '{filepath}'...");
+    
+    using StreamWriter writer = File.AppendText(filepath);
+    writer.WriteLine();
+    writer.Write(text);
 }

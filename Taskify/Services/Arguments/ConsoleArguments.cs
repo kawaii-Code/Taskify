@@ -2,19 +2,27 @@
 
 public class ConsoleArguments : IArguments
 {
-    public string Uri { get; private init; }
-    public string Filepath { get; private init; }
-
-    private ConsoleArguments()
+    private readonly string[] _args;
+    
+    public ConsoleArguments(string[] args)
     {
+        _args = args;
     }
 
-    public static ConsoleArguments Parse(string[] arguments)
+    public string GetUri() =>
+        _args[0];
+
+    public string? GetFilepath()
     {
-        return new ConsoleArguments()
-        {
-            Uri = arguments[0],
-            Filepath = arguments[1],
-        };
+        int filepathOptionIndex = Array.IndexOf(_args, "-f");
+        if (filepathOptionIndex == -1)
+            return null;
+        return _args[filepathOptionIndex + 1];
+    }
+
+    public bool IsPreview()
+    {
+        int previewOptionIndex = Array.IndexOf(_args, "-p");
+        return previewOptionIndex != -1;
     }
 }

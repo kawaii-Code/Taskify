@@ -1,6 +1,6 @@
 ﻿namespace Taskify.Services.TaskPageSource;
 
-public interface ITaskPageSource
+public interface ITaskPageScraper
 {
     public Task<string> GetPage(string uri);
 }

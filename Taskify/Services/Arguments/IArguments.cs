@@ -2,6 +2,7 @@
 
 public interface IArguments
 {
-    string Uri { get; }
-    string Filepath { get; }
+    string GetUri();
+    string? GetFilepath();
+    bool IsPreview();
 }

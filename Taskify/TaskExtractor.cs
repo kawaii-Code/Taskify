@@ -7,33 +7,26 @@ namespace Taskify;
 
 public partial class TaskExtractor
 {
-    private readonly ITaskPageSource _source;
+    private readonly ITaskPageScraper _scraper;
     private readonly ITaskDescriptionDecorator _taskDescriptionDecorator;
     private readonly Regex _taskPattern;
     private readonly Regex[] _filters;
     
-    public TaskExtractor(ITaskPageSource source, ITaskDescriptionDecorator taskDescriptionDecorator)
+    public TaskExtractor(ITaskPageScraper scraper, ITaskDescriptionDecorator taskDescriptionDecorator)
     {
-        _source = source;
+        _scraper = scraper;
         _taskDescriptionDecorator = taskDescriptionDecorator;
-        _taskPattern = GetDefaultTaskPattern();
-        
-        Regex htmlTag = new(@"<.*?>");
-        Regex taskName = new(@"\[.+?\]");
-        Regex xmlEscapeSequence = new(@"&.+?;");
-        _filters = new[] { htmlTag, taskName, xmlEscapeSequence };
+        _taskPattern = DefaultTaskDescription();
+        _filters = new[] { HtmlTagRegex(), TaskNameRegex(), XmlEscapeSequenceRegex() };
     }
     
-    [GeneratedRegex(@"<ol.*?>[\s\S]*?</ol>")]
-    private static partial Regex GetDefaultTaskPattern();
-
     public async Task<string> GetTaskDescriptionsAsync(string uri) =>
         await GetTaskDescriptionsAsync(uri, _taskPattern);
 
     public async Task<string> GetTaskDescriptionsAsync(string uri, Regex taskPattern)
     {
         StringBuilder resultBuilder = new();
-        string page = await _source.GetPage(uri);
+        string page = await _scraper.GetPage(uri);
         
         foreach (Match match in taskPattern.Matches(page))
         {
@@ -51,4 +44,14 @@ public partial class TaskExtractor
 
         return resultBuilder.ToString();
     }
+
+    [GeneratedRegex(@"<ol.*?>[\s\S]*?</ol>")]
+    private static partial Regex DefaultTaskDescription();
+    
+    [GeneratedRegex("<.*?>")]
+    private static partial Regex HtmlTagRegex();
+    [GeneratedRegex("\\[.+?\\]")]
+    private static partial Regex TaskNameRegex();
+    [GeneratedRegex("&.+?;")]
+    private static partial Regex XmlEscapeSequenceRegex();
 }

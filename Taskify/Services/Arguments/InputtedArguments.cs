@@ -2,23 +2,24 @@
 
 public class InputtedArguments : IArguments
 {
-    public string Uri
+    public string GetUri()
     {
-        get
-        {
-            Console.WriteLine("Insert uri: ");
-            string uri = Console.ReadLine();
-            return uri;
-        }
+        Console.Write("Moodle username > ");
+        string username = Console.ReadLine();
+        return username;
     }
 
-    public string Filepath
+    public string? GetFilepath()
     {
-        get
-        {
-            Console.WriteLine("Insert filepath: ");
-            string filepath = Console.ReadLine();
-            return filepath;
-        }
+        Console.Write("File to write to > ");
+        string filepath = Console.ReadLine();
+        return filepath;
+    }
+
+    public bool IsPreview()
+    {
+        Console.Write("Show preview? y/n > ");
+        string response = Console.ReadLine();
+        return response?.ToLower() == "y";
     }
 }

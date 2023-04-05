@@ -3,20 +3,18 @@ using Taskify.Services.LoginDetails;
 
 namespace Taskify.Services.TaskPageSource;
 
-public partial class MoodlePageScraper : ITaskPageSource
+public partial class MoodlePageScraper : ITaskPageScraper
 {
     private const string LoginPage = @"https://edu.mmcs.sfedu.ru/login/index.php";
     
-    private readonly string _username;
-    private readonly string _password;
+    private readonly ILoginDetails _loginDetails;
     private readonly HttpClient _client;
     
     private bool _isLoggedIn;
 
-    public MoodlePageScraper(ILoginDetailsService loginDetails)
+    public MoodlePageScraper(ILoginDetails loginDetails)
     {
-        _username = loginDetails.Username;
-        _password = loginDetails.Password;
+        _loginDetails = loginDetails;
         _client = new HttpClient();
     }
 
@@ -37,25 +35,33 @@ public partial class MoodlePageScraper : ITaskPageSource
     public async Task Login()
     {
         string loginToken = await GetLoginToken();
-        
+
+        const string usernameField = "username";
+        const string passwordField = "password";
+        const string loginTokenField = "logintoken";
         FormUrlEncodedContent loginDetails = new(new[]
         {
-            new KeyValuePair<string, string>("username", _username),
-            new KeyValuePair<string, string>("password", _password),
-            new KeyValuePair<string, string>("logintoken", loginToken),
+            new KeyValuePair<string, string>(usernameField, _loginDetails.GetUsername()),
+            new KeyValuePair<string, string>(passwordField, _loginDetails.GetPassword()),
+            new KeyValuePair<string, string>(loginTokenField, loginToken),
         });
         
         HttpResponseMessage loginResponse = await _client.PostAsync(LoginPage, loginDetails);
-        loginResponse.EnsureSuccessStatusCode();
+        await AssertSuccessfulLogin(loginResponse);
         
-        // TODO: This check is costly
-        string text = await loginResponse.Content.ReadAsStringAsync();
-        if (text.Contains("loginerrormessage", StringComparison.Ordinal))
-            throw new ArgumentException("Login or password are incorrect!");
-
         _isLoggedIn = true;
     }
-    
+
+    private static async Task AssertSuccessfulLogin(HttpResponseMessage loginResponse)
+    {
+        const string loginErrorMarker = "loginerrormessage";
+        
+        loginResponse.EnsureSuccessStatusCode();
+        string text = await loginResponse.Content.ReadAsStringAsync();
+        if (text.Contains(loginErrorMarker, StringComparison.Ordinal))
+            throw new ArgumentException("Login or password are incorrect!");
+    }
+
     private async Task<string> GetLoginToken()
     {
         HttpResponseMessage login = await _client.GetAsync(LoginPage);
