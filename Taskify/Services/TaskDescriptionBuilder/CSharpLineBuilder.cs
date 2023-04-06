@@ -9,7 +9,7 @@ public class CSharpLineDecorator : ITaskDescriptionDecorator
         StringBuilder csLineBuilder = new();
         csLineBuilder.AppendLine("// == TASK 1 ==");
         csLineBuilder.Append("// ");
-        csLineBuilder.AppendLine(line);
+        csLineBuilder.AppendLine(string.Join("\n// ", line.Split("\n")));
         return csLineBuilder.ToString();
     }
 }
