@@ -3,7 +3,7 @@ using Taskify.Services.LoginDetails;
 
 namespace Taskify.Services.TaskPageSource;
 
-public partial class MoodlePageScraper : ITaskPageScraper
+public partial class MoodlePageSource : ITaskPageSource
 {
     private const string LoginPage = @"https://edu.mmcs.sfedu.ru/login/index.php";
     
@@ -12,13 +12,13 @@ public partial class MoodlePageScraper : ITaskPageScraper
     
     private bool _isLoggedIn;
 
-    public MoodlePageScraper(ILoginDetails loginDetails)
+    public MoodlePageSource(ILoginDetails loginDetails)
     {
         _loginDetails = loginDetails;
         _client = new HttpClient();
     }
 
-    ~MoodlePageScraper()
+    ~MoodlePageSource()
     {
         _client.Dispose();
     }
@@ -59,7 +59,7 @@ public partial class MoodlePageScraper : ITaskPageScraper
         loginResponse.EnsureSuccessStatusCode();
         string text = await loginResponse.Content.ReadAsStringAsync();
         if (text.Contains(loginErrorMarker, StringComparison.Ordinal))
-            throw new ArgumentException("Login or password are incorrect!");
+            throw new ArgumentException("Wrong login or password!");
     }
 
     private async Task<string> GetLoginToken()

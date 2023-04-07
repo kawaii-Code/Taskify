@@ -2,11 +2,11 @@
 
 namespace Taskify.Services.TaskDescriptionBuilder;
 
-public class CSharpLineDecorator : ITaskDescriptionDecorator
+public class CSharpLineBuilder : ITaskDescriptionBuilder
 {
     private int _taskIndex = 1;
     
-    public string DecorateLine(string line)
+    public string BuildLine(string line)
     {
         StringBuilder csLineBuilder = new();
         csLineBuilder.AppendLine($"// == TASK {_taskIndex++} ==");

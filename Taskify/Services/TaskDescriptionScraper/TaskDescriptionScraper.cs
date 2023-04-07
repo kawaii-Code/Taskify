@@ -4,18 +4,18 @@ using Taskify.Services.TaskDescriptionBuilder;
 using Taskify.Services.TaskPageSource;
 using HtmlAgilityPack;
 
-namespace Taskify;
+namespace Taskify.Services.TaskDescriptionScraper;
 
-public partial class TaskExtractor
+public partial class TaskDescriptionScraper
 {
-    private readonly ITaskPageScraper _scraper;
-    private readonly ITaskDescriptionDecorator _taskDescriptionDecorator;
+    private readonly ITaskPageSource _source;
+    private readonly ITaskDescriptionBuilder _taskDescriptionBuilder;
     private readonly Regex[] _filters;
     
-    public TaskExtractor(ITaskPageScraper scraper, ITaskDescriptionDecorator taskDescriptionDecorator)
+    public TaskDescriptionScraper(ITaskPageSource source, ITaskDescriptionBuilder taskDescriptionBuilder)
     {
-        _scraper = scraper;
-        _taskDescriptionDecorator = taskDescriptionDecorator;
+        _source = source;
+        _taskDescriptionBuilder = taskDescriptionBuilder;
         _filters = new[] { HtmlTagRegex(), TaskNameRegex(), XmlEscapeSequenceRegex() };
     }
     
@@ -23,7 +23,7 @@ public partial class TaskExtractor
     {
         const int smallestTaskDescription = 20;
         
-        string page = await _scraper.GetPage(uri);
+        string page = await _source.GetPage(uri);
         HtmlDocument html = new();
         html.LoadHtml(page);
 
@@ -37,7 +37,7 @@ public partial class TaskExtractor
             if (text.Length < smallestTaskDescription)
                 continue;
 
-            string resultLine = _taskDescriptionDecorator.DecorateLine(text.Trim());
+            string resultLine = _taskDescriptionBuilder.BuildLine(text.Trim());
             resultBuilder.AppendLine(resultLine);
         }
 

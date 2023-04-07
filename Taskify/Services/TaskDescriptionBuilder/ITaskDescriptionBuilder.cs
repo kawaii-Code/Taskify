@@ -1,6 +1,6 @@
 ﻿namespace Taskify.Services.TaskDescriptionBuilder;
 
-public interface ITaskDescriptionDecorator
+public interface ITaskDescriptionBuilder
 {
-    string DecorateLine(string line);
+    string BuildLine(string line);
 }

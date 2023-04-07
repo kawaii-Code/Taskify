@@ -26,6 +26,20 @@ Examples:
         Log(message, ConsoleColor.Green);
     public static void Help() =>
         Log(HelpPrompt, ConsoleColor.Gray);
+    
+    public static void Preview(string preview)
+    {
+        Hint("== START PREVIEW ==");
+        Status(preview);
+        Hint("==  END PREVIEW  ==");
+    }
+
+    public static void ReportFileNotFound()
+    {
+        Error("No filepath provided!");
+        Hint("You could have forgotten the -f flag.");
+        Hint("Provide a filepath like this: '-f <filepath>'.");
+    }
 
     private static void Log(string text, ConsoleColor color)
     {
