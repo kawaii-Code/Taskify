@@ -1,4 +1,6 @@
-﻿namespace Taskify.Services.LoginDetails;
+﻿using System.Text;
+
+namespace Taskify.Services.LoginDetails;
 
 public class InputtedLoginDetails : ILoginDetails
 {
@@ -15,7 +17,27 @@ public class InputtedLoginDetails : ILoginDetails
     public string GetPassword()
     {
         Console.Write("Moodle password: ");
-        _password = Console.ReadLine();
+        
+        StringBuilder passwordBuilder = new();
+        ConsoleKeyInfo next;
+        do
+        {
+            next = Console.ReadKey(true);
+            if (char.IsLetterOrDigit(next.KeyChar) || char.IsPunctuation(next.KeyChar))
+            {
+                Console.Write("*");
+                passwordBuilder.Append(next.KeyChar);
+            }
+
+            if (next.Key == ConsoleKey.Backspace)
+            {
+                Console.Write("\b");
+                passwordBuilder.Remove(passwordBuilder.Length - 1, 1);
+            }
+        } while (next.Key != ConsoleKey.Enter);
+        Console.WriteLine();
+        
+        _password = passwordBuilder.ToString().Trim();
         return _password;
     }
 
