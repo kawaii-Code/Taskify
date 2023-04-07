@@ -8,6 +8,9 @@ namespace Taskify.Services.TaskDescriptionScraper;
 
 public partial class TaskDescriptionScraper
 {
+    private const string DefaultXPath = "//div[@class='no-overflow']//ol/li";
+    private const string FallbackXPath = "//div[@class='no-overflow']";
+    
     private readonly ITaskPageSource _source;
     private readonly ITaskDescriptionBuilder _taskDescriptionBuilder;
     private readonly Regex[] _filters;
@@ -28,7 +31,11 @@ public partial class TaskDescriptionScraper
         html.LoadHtml(page);
 
         StringBuilder resultBuilder = new();
-        foreach (HtmlNode taskNode in html.DocumentNode.SelectNodes("//div[@class='no-overflow']//ol/li"))
+        HtmlNodeCollection nodes =
+            html.DocumentNode.SelectNodes(DefaultXPath) 
+            ?? html.DocumentNode.SelectNodes(FallbackXPath);
+
+        foreach (HtmlNode taskNode in nodes)
         {
             string text = taskNode.InnerText;
             foreach (Regex filter in _filters)
