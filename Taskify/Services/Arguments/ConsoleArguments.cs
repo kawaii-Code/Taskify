@@ -20,9 +20,9 @@ public class ConsoleArguments : IArguments
         return _args[filepathOptionIndex + 1];
     }
 
-    public bool IsPreview()
-    {
-        int previewOptionIndex = Array.IndexOf(_args, "-p");
-        return previewOptionIndex != -1;
-    }
+    public bool IsPreview() =>
+        _args.Contains("-p");
+
+    public bool IsHelp() =>
+        _args.Contains("-h") || _args.Length == 0;
 }

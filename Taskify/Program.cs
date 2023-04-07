@@ -4,10 +4,12 @@ using Taskify.Services.LoginDetails;
 using Taskify.Services.TaskDescriptionBuilder;
 using Taskify.Services.TaskPageSource;
 
-IArguments arguments = 
-    args.Length > 1
-        ? new ConsoleArguments(args)
-        : new InputtedArguments();
+IArguments arguments = new ConsoleArguments(args);
+if (arguments.IsHelp())
+{
+    Logger.Help();
+    return 0;
+}
 ILoginDetails loginDetails = 
     FileLoginDetails.AreAvailable()
         ? new FileLoginDetails()

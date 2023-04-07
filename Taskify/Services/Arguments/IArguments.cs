@@ -5,4 +5,5 @@ public interface IArguments
     string GetUri();
     string? GetFilepath();
     bool IsPreview();
+    bool IsHelp();
 }
