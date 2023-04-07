@@ -28,7 +28,7 @@ public partial class TaskExtractor
         html.LoadHtml(page);
 
         StringBuilder resultBuilder = new();
-        foreach (HtmlNode taskNode in html.DocumentNode.SelectNodes("//div[@class='no-overflow']/ol/li"))
+        foreach (HtmlNode taskNode in html.DocumentNode.SelectNodes("//div[@class='no-overflow']//ol/li"))
         {
             string text = taskNode.InnerText;
             foreach (Regex filter in _filters)
