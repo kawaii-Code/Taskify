@@ -25,7 +25,7 @@ public class FileLoginDetails : ILoginDetails
 
     private void ReadLoginDetails()
     {
-        string[] loginDetails = File.ReadAllText(UserLoginDetailsFileName).Split('\n');
+        string[] loginDetails = File.ReadAllText(UserLoginDetailsFilepath).Split('\n');
         _username = loginDetails[0];
         _password = loginDetails[1];
     }
