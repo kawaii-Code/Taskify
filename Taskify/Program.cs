@@ -15,9 +15,16 @@ ILoginDetails loginDetails =
         ? new FileLoginDetails()
         : new InputtedLoginDetails();
 ITaskPageScraper pageScraper;
+ITaskDescriptionDecorator decorator = new CSharpLineDecorator();
+
+string uri = arguments.GetUri();
+bool isPreview = arguments.IsPreview();
+
 try
 {
     pageScraper = await InitializeMoodlePageScraper();
+    if (loginDetails is InputtedLoginDetails inputtedLoginDetails && inputtedLoginDetails.UserWantsToSave())
+        inputtedLoginDetails.Save();
 }
 catch (HttpRequestException httpRequestException)
 {
@@ -30,10 +37,6 @@ catch (Exception exception)
     Logger.Error(exception.Message);
     return -1;
 }
-ITaskDescriptionDecorator decorator = new CSharpLineDecorator();
-
-string uri = arguments.GetUri();
-bool isPreview = arguments.IsPreview();
 
 Logger.Status("Extracting tasks...");
 TaskExtractor extractor = new(pageScraper, decorator);
