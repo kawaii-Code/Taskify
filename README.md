@@ -1,5 +1,7 @@
 # Taskify
 
+Works only in edu.mmcs.sfedu.ru!
+
 A very specialised program for copypasting task descriptions 
 from Moodle to the specified file. Helpful when you don't 
 have much time for copying all the descriptions manually.
